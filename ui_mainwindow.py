@@ -4,7 +4,7 @@ class Ui_MainWindow:
     def setupUi(self, MainWindow):
 
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(1200, 1000)
 
         # 创建中央窗口
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -19,7 +19,7 @@ class Ui_MainWindow:
         self.interfaceAndFilterLayout.addWidget(self.interfaceLabel)
 
         self.interfaceComboBox = QtWidgets.QComboBox()
-        self.interfaceComboBox.setMinimumWidth(300)  
+        self.interfaceComboBox.setMinimumWidth(500)  
         self.interfaceComboBox.setMinimumHeight(30)  
         self.interfaceComboBox.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.interfaceAndFilterLayout.addWidget(self.interfaceComboBox)
@@ -31,7 +31,7 @@ class Ui_MainWindow:
         self.filterLayout.addWidget(self.filterLabel)
 
         self.filterInput = QtWidgets.QLineEdit()
-        self.filterInput.setMinimumWidth(300)  
+        self.filterInput.setMinimumWidth(500)  
         self.filterInput.setMinimumHeight(30)  
         self.filterInput.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.filterLayout.addWidget(self.filterInput)
@@ -55,18 +55,18 @@ class Ui_MainWindow:
         # Packet List 窗格
         self.packetListWidget = QtWidgets.QTableWidget()
         self.packetListWidget.setColumnCount(6)
-        self.packetListWidget.setHorizontalHeaderLabels(["No", "Time", "Source", "Destination", "Protocol", "Length"])
+        self.packetListWidget.setHorizontalHeaderLabels([ "Time", "Source", "Destination", "Protocol", "Length", "Info"])
         self.layout.addWidget(self.packetListWidget)
 
         # Packet Details 窗格
-        self.packetDetailsTextEdit = QtWidgets.QTextEdit()
-        self.packetDetailsTextEdit.setPlaceholderText("Packet Details will be shown here...")
-        self.layout.addWidget(self.packetDetailsTextEdit)
+        self.packetDetailsTreeWidget = QtWidgets.QTreeWidget()
+        self.packetDetailsTreeWidget.setHeaderLabels(["Layer", "Details"])  # 设置表头
+        self.layout.addWidget(self.packetDetailsTreeWidget)
 
-        # Packet in Binary 窗格
-        self.packetBinaryTextEdit = QtWidgets.QTextEdit()
-        self.packetBinaryTextEdit.setPlaceholderText("Packet in Binary will be shown here...")
-        self.layout.addWidget(self.packetBinaryTextEdit)
+        # Packet in hex 窗格
+        self.packetHexTextEdit = QtWidgets.QTextEdit()
+        self.packetHexTextEdit.setPlaceholderText("Packet in hex will be shown here...")
+        self.layout.addWidget(self.packetHexTextEdit)
 
         MainWindow.setWindowTitle("网络嗅探器")
 
