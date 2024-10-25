@@ -4,7 +4,7 @@ from sniffer import PacketSniffer
 from ui_mainwindow import Ui_MainWindow
 #from PyQt5.QtCore import qRegisterMetaType, QVector
 
-show_interfaces()#显示网卡
+show_interfaces()
 
 class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -36,6 +36,10 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             self.packetListWidget.setRowCount(0)  # 清空packet_list
             print("Packet list cleared.")  # 确认清空操作
+            self.packetDetailsTreeWidget.clear() 
+            self.packetHexTextEdit.clear()
+            self.packet_storage.clear()
+
             select_interface = self.interfaceComboBox.currentText()
             filter_condition = self.filterInput.text()
             print(select_interface) 
@@ -62,6 +66,7 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         pkt_hex = hexdump(packet,dump=True) ## 获取原始内容
         print(f"hex{pkt_hex}")
         print('packet:')
+        print(packet)
         #No
         self.packetCounter += 1
         print(self.packetCounter)
@@ -70,6 +75,7 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         print(packet_time)
         #src dst
         if IP in packet:
+            print("ip in packet")
             src = packet[IP].src
             dst = packet[IP].dst
         else :
@@ -104,6 +110,8 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.packetListWidget.setItem(row_position, 3, QtWidgets.QTableWidgetItem(protocol))  # Protocol
         self.packetListWidget.setItem(row_position, 4, QtWidgets.QTableWidgetItem(length))  # Length
         self.packetListWidget.setItem(row_position, 5, QtWidgets.QTableWidgetItem(info))  # Info
+        # 滚动到最后一行
+        self.packetListWidget.scrollToBottom()
 
     def show_packet_details_and_hex(self,item):
         try:

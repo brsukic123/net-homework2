@@ -14,13 +14,15 @@ class PacketSniffer():
         if not self.sniffing:
             self.sniffing = True
             self.thread = threading.Thread(target=self.sniff_packets, args=(select_interface, filter_condition, update_callback))
+            self.thread.setDaemon(True)
             self.thread.start()
 
     def stop_sniffing(self):
         if self.sniffing:
             self.sniffing = False
-            if self.thread:
-                self.thread.join(timeout=1)
+            # if self.thread:
+            #     self.thread.join(timeout=1)
+            #self.sniffer.stop()
 
 
 

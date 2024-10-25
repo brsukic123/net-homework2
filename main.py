@@ -13,9 +13,6 @@ if __name__ == "__main__":
     
     window.setWindowTitle("网络嗅探器")
     window.show()
-    
-    #stop....
-    pass
 
     sys.exit(app.exec_())
-    print("test")
+    # print("test")
