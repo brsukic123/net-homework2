@@ -10,14 +10,11 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         #qRegisterMetaType(QVector, 'QVector<int>')
-        self.sniffing = False
-        self.thread = None
         self.packetCounter = 0
         self.packet_storage = [] #存储数据包
         self.sniffer_thread = None
-
         self.setupUi(self) #UI
-        #self.sniffer = PacketSnifferThread() #嗅探器实例
+        #self.sniffer_thread = PacketSnifferThread() #嗅探器实例
         self.show_network_interface() #填充网卡下拉框
         self.startButton.clicked.connect(self.start_button_clicked)#连接开始的点击事件
         self.stopButton.clicked.connect(self.stop_button_clicked)#连接结束按钮的点击事件
@@ -35,17 +32,23 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def start_button_clicked(self):
         try:
+            # if self.sniffer_thread.sniffing:
+            #     # 如果当前正在嗅探，则先停止
+            #     self.sniffer_thread.stop()
+            #     self.sniffer_thread = None
+            if self.sniffer_thread is not None:
+                self.sniffer_thread.stop()
+                self.sniffer_thread= None
             self.packetListWidget.setRowCount(0)  # 清空packet_list
-            print("Packet list cleared.")  # 确认清空操作
             self.packetDetailsTreeWidget.clear() 
             self.packetHexTextEdit.clear()
             self.packet_storage.clear()
+            print("Packet list cleared.")  # 确认清空操作
 
             select_interface = self.interfaceComboBox.currentText()
             filter_condition = self.filterInput.text()
-            # print(select_interface) 
-            # print(filter_condition)
-            # self.sniffer.start_sniffing(select_interface,filter_condition,self.update_packet_list)
+            print(select_interface,filter_condition)
+
             self.sniffer_thread = PacketSnifferThread(select_interface, filter_condition)
             self.sniffer_thread.packetCaptured.connect(self.update_packet_list)
             self.sniffer_thread.start()
@@ -55,18 +58,11 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         except Exception as e:
             print(f"Error while stopping sniffing:{e}")
     
-    # def stop_button_clicked(self):
-    #     try:
-    #         self.sniffer.stop_sniffing()
-    #         print("stoped")
-
-    #     except Exception as e:
-    #         print(f"Error while stopping sniffing: {e}")
-
     def stop_button_clicked(self):
         try:
             if self.sniffer_thread:
                 self.sniffer_thread.stop()
+                self.sniffer_thread = None
             print("stopped")
         except Exception as e:
             print(f"error while stopping sniffering: {e}")
