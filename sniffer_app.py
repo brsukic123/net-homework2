@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets,QtCore
 from scapy.all import*
-from sniffer import PacketSniffer
+from sniffer import PacketSnifferThread
 from ui_mainwindow import Ui_MainWindow
 #from PyQt5.QtCore import qRegisterMetaType, QVector
 
@@ -14,9 +14,10 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread = None
         self.packetCounter = 0
         self.packet_storage = [] #存储数据包
+        self.sniffer_thread = None
 
         self.setupUi(self) #UI
-        self.sniffer = PacketSniffer() #嗅探器实例
+        #self.sniffer = PacketSnifferThread() #嗅探器实例
         self.show_network_interface() #填充网卡下拉框
         self.startButton.clicked.connect(self.start_button_clicked)#连接开始的点击事件
         self.stopButton.clicked.connect(self.stop_button_clicked)#连接结束按钮的点击事件
@@ -42,22 +43,33 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
             select_interface = self.interfaceComboBox.currentText()
             filter_condition = self.filterInput.text()
-            print(select_interface) 
-            print(filter_condition)
-            self.sniffer.start_sniffing(select_interface,filter_condition,self.update_packet_list)
-        
+            # print(select_interface) 
+            # print(filter_condition)
+            # self.sniffer.start_sniffing(select_interface,filter_condition,self.update_packet_list)
+            self.sniffer_thread = PacketSnifferThread(select_interface, filter_condition)
+            self.sniffer_thread.packetCaptured.connect(self.update_packet_list)
+            self.sniffer_thread.start()
+
         except PermissionError as e:
             print(f"Permission denied for interface {select_interface}: {e}")
         except Exception as e:
             print(f"Error while stopping sniffing:{e}")
     
+    # def stop_button_clicked(self):
+    #     try:
+    #         self.sniffer.stop_sniffing()
+    #         print("stoped")
+
+    #     except Exception as e:
+    #         print(f"Error while stopping sniffing: {e}")
+
     def stop_button_clicked(self):
         try:
-            self.sniffer.stop_sniffing()
-            print("stoped")
-
+            if self.sniffer_thread:
+                self.sniffer_thread.stop()
+            print("stopped")
         except Exception as e:
-            print(f"Error while stopping sniffing: {e}")
+            print(f"error while stopping sniffering: {e}")
 
     #call_back
     def update_packet_list(self, packet):
@@ -75,7 +87,7 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         print(packet_time)
         #src dst
         if IP in packet:
-            print("ip in packet")
+            #print("ip in packet")
             src = packet[IP].src
             dst = packet[IP].dst
         else :
