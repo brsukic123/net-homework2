@@ -6,6 +6,19 @@ class Ui_MainWindow:
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1200, 1000)
 
+        # 创建菜单栏
+        self.menuBar = MainWindow.menuBar()
+        self.fileMenu = self.menuBar.addMenu("文件")  
+        # 添加保存动作
+        self.saveAction = QtWidgets.QAction("保存", MainWindow)
+        self.fileMenu.addAction(self.saveAction)
+        # 添加退出动作
+        self.exitAction = QtWidgets.QAction("退出", MainWindow)
+        self.fileMenu.addAction(self.exitAction)
+        # 创建分析菜单
+        self.analysisMenu = self.menuBar.addMenu("分析")  # 新增分析菜单
+        self.analyzeAction = QtWidgets.QAction("分析当前数据包", MainWindow)
+        self.analysisMenu.addAction(self.analyzeAction)
         # 创建中央窗口
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         MainWindow.setCentralWidget(self.centralwidget)

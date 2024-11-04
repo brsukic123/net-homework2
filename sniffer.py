@@ -1,9 +1,10 @@
 import threading
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 from scapy.all import sniff
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal,QCoreApplication
 from ui_mainwindow import Ui_MainWindow
-
 class PacketSniffer(QThread):
     packet_received = pyqtSignal(object)
 

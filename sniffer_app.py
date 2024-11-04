@@ -2,6 +2,10 @@ from PyQt5 import QtWidgets,QtCore
 from scapy.all import*
 from sniffer import PacketSniffer
 from ui_mainwindow import Ui_MainWindow
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QCoreApplication
+from PyQt5.QtWidgets import *
+
 #from PyQt5.QtCore import qRegisterMetaType, QVector
 
 show_interfaces()
@@ -15,14 +19,20 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.sniff_thread = None
         self.packetCounter = 0
-        self.packet_storage = [] #存储数据包
+        self.packet_storage = [] #存储数据包 -> queue
 
         self.setupUi(self) #UI
         self.show_network_interface() #填充网卡下拉框
+        self.clicked_connect() #点击事件处理
+
+    def clicked_connect(self):
+        #信号连接
         self.startButton.clicked.connect(self.start_button_clicked)#连接开始的点击事件
         self.stopButton.clicked.connect(self.stop_button_clicked)#连接结束按钮的点击事件
         self.packetListWidget.itemClicked.connect(self.show_packet_details_and_hex)#显示packet_details_and_hex
-        
+        self.saveAction.triggered.connect(self.save_packet_list)  # 连接保存菜单
+        self.exitAction.triggered.connect(self.close)  # 连接退出菜单
+        self.analyzeAction.triggered.connect(self.save_current_packet)#连接当前数据包分析
 
     def show_network_interface(self):
         #interfaces = get_if_list()
@@ -35,11 +45,15 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def start_button_clicked(self):
         try:
+            # 在开始新的嗅探之前检查有没有嗅探线程在运行
+            if self.sniff_thread :
+                self.stop_button_clicked()  # 调用停止按钮的逻辑
             self.packetListWidget.setRowCount(0)  # 清空packet_list
             print("Packet list cleared.")  # 确认清空操作
             self.packetDetailsTreeWidget.clear() 
             self.packetHexTextEdit.clear()
             self.packet_storage.clear()
+            self.packetCounter = 0
 
             select_interface = self.interfaceComboBox.currentText()
             filter_condition = self.filterInput.text()
@@ -58,6 +72,7 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             if self.sniff_thread:
                 self.sniff_thread.stop()
+                #self.sniff_thread.terminate()
                 #self.sniff_thread.wait()
             print("stoped")
 
@@ -68,56 +83,58 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
     def update_packet_list(self, packet):
         # 处理并显示数据包信息
         self.packet_storage.append(packet)
-        if len(self.packet_storage) % 10 == 0:  # 每10个包更新一次
-            pkt_hex = hexdump(packet,dump=True) ## 获取原始内容
-            print(f"hex{pkt_hex}")
-            print('packet:')
-            print(packet)
-            #No
-            self.packetCounter += 1
-            print(self.packetCounter)
-            #time
-            packet_time = datetime.fromtimestamp(packet.time).strftime('%Y-%m-%d %H:%M:%S')  # 获取捕获时间并格式化
-            print(packet_time)
-            #src dst
-            if IP in packet:
-                print("ip in packet")
-                src = packet[IP].src
-                dst = packet[IP].dst
-            else :
-                src = packet.src
-                dst = packet.dst
-            print(src)
-            print(dst)
-            #protocol
-            layer = None
-            for var in self.get_packet_layers(packet):
-                if not isinstance(var,(Padding, Raw)):
-                    layer = var #找到第一个有效层，非padding和非raw层
-            protocol = layer.name 
-            print(protocol)
+        #No
+        self.packetCounter += 1
+        print(self.packetCounter)
+       
+        pkt_hex = hexdump(packet,dump=True) ## 获取原始内容
+        print(f"hex{pkt_hex}")
+        print('packet:')
+        print(packet)
 
-            #length
-            length = f"{len(packet)}"
-            print(length)
+        #time
+        packet_time = datetime.fromtimestamp(packet.time).strftime('%Y-%m-%d %H:%M:%S')  # 获取捕获时间并格式化
+        print(packet_time)
+        #src dst
+        if IP in packet:
+            print("ip in packet")
+            src = packet[IP].src
+            dst = packet[IP].dst
+        else :
+            src = packet.src
+            dst = packet.dst
+        print(src)
+        print(dst)
+        #protocol
+        layer = None
+        for var in self.get_packet_layers(packet):
+            if not isinstance(var,(Padding, Raw)):
+                layer = var #找到第一个有效层，非padding和非raw层
+        protocol = layer.name 
+        print(protocol)
 
-            #info
-            try:
-                info = str(packet.summary())
-            except:
-                info = "error"
-            #show
-            # 将信息添加到 packetListWidget
-            row_position = self.packetListWidget.rowCount()  # 获取当前行数，以便插入新行
-            self.packetListWidget.insertRow(row_position)  # 在最后一行插入新行
-            self.packetListWidget.setItem(row_position, 0, QtWidgets.QTableWidgetItem(packet_time))  # Time
-            self.packetListWidget.setItem(row_position, 1, QtWidgets.QTableWidgetItem(src))  # Source
-            self.packetListWidget.setItem(row_position, 2, QtWidgets.QTableWidgetItem(dst))  # Destination
-            self.packetListWidget.setItem(row_position, 3, QtWidgets.QTableWidgetItem(protocol))  # Protocol
-            self.packetListWidget.setItem(row_position, 4, QtWidgets.QTableWidgetItem(length))  # Length
-            self.packetListWidget.setItem(row_position, 5, QtWidgets.QTableWidgetItem(info))  # Info
-            # 滚动到最后一行
+        #length
+        length = f"{len(packet)}"
+        print(length)
+
+        #info
+        try:
+            info = str(packet.summary())
+        except:
+            info = "error"
+        #show
+        # 将信息添加到 packetListWidget
+        row_position = self.packetListWidget.rowCount()  # 获取当前行数，以便插入新行
+        self.packetListWidget.insertRow(row_position)  # 在最后一行插入新行
+        self.packetListWidget.setItem(row_position, 0, QtWidgets.QTableWidgetItem(packet_time))  # Time
+        self.packetListWidget.setItem(row_position, 1, QtWidgets.QTableWidgetItem(src))  # Source
+        self.packetListWidget.setItem(row_position, 2, QtWidgets.QTableWidgetItem(dst))  # Destination
+        self.packetListWidget.setItem(row_position, 3, QtWidgets.QTableWidgetItem(protocol))  # Protocol
+        self.packetListWidget.setItem(row_position, 4, QtWidgets.QTableWidgetItem(length))  # Length
+        self.packetListWidget.setItem(row_position, 5, QtWidgets.QTableWidgetItem(info))  # Info
+        # 滚动到最后一行
         self.packetListWidget.scrollToBottom()
+        QCoreApplication.processEvents()
 
     def show_packet_details_and_hex(self,item):
         try:
@@ -167,3 +184,53 @@ class SnifferApp(QtWidgets.QMainWindow, Ui_MainWindow):
         pkt_hex = hexdump(packet,dump=True) ## 获取原始内容
         self.packetHexTextEdit.append(pkt_hex)
         self.packetDetailsTreeWidget.verticalScrollBar().setValue(self.packetDetailsTreeWidget.verticalScrollBar().maximum())
+
+
+    def save_packet_list(self):
+        if not self.packet_storage:  # 检查是否有数据包
+            QtWidgets.QMessageBox.warning(self, "警告", "没有数据包可保存。")
+            return
+
+        options = QFileDialog.Options()
+        save_path, _ = QFileDialog.getSaveFileName(self, "保存数据包", "", "pcap(*.pcap);;All Files (*)", options=options)
+        
+        if save_path:
+            try:
+                # 使用 wrpcap 函数保存数据包
+                wrpcap(save_path, self.packet_storage, append=False)
+                QtWidgets.QMessageBox.information(self, "成功", "数据包已成功保存。")
+            except Exception as e:
+                print(e)
+                QtWidgets.QMessageBox.critical(self, "错误", f"保存数据包时发生错误: {e}")
+                sys.exit(6)  
+
+    #generate_pdf
+    def save_current_packet(self):
+        # Check if the packet list is empty
+        if not self.packet_storage:
+            QtWidgets.QMessageBox.warning(self, "警告", "没有数据包可保存。")
+            return
+
+        # Get the selected item in the packet list
+        selected_item = self.packetListWidget.currentItem()
+        if not selected_item:
+            QtWidgets.QMessageBox.warning(self, "警告", "请选择一个数据包进行保存。")
+            return
+        
+        # Get the index of the selected item
+        selected_row = selected_item.row()
+        # Get the corresponding packet from storage
+        selected_packet = self.packet_storage[selected_row]
+
+        # Ask user for the file name to save the PDF
+        options = QFileDialog.Options()
+        self.filename, _ = QFileDialog.getSaveFileName(self, "保存当前数据包为PDF", "", "PDF Files (*.pdf);;All Files (*)", options=options)
+        
+        if self.filename:
+            try:
+                # Use Scapy's function to write the packet details to a PDF
+                selected_packet.canvas_dump().writePDFfile(self.filename)
+                QtWidgets.QMessageBox.information(self, "成功", "当前数据包已成功保存为PDF。")
+            except Exception as e:
+                print(f"Error while saving PDF: {e}")
+                QtWidgets.QMessageBox.critical(self, "错误", f"保存当前数据包时发生错误: {e}")
